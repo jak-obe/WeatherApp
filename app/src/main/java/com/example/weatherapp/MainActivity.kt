@@ -16,10 +16,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavHostController
 import androidx.room.Room
 import com.example.weatherapp.Data.room.Database
 import com.example.weatherapp.Data.room.Miasto
 import com.example.weatherapp.api.obiektRetrofit.api
+import com.example.weatherapp.navigation.Screens.ScaffoldExample
 import com.example.weatherapp.ui.theme.WeatherAppTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -28,6 +30,10 @@ import kotlinx.coroutines.withContext
 class MainActivity : ComponentActivity() {
     @SuppressLint("CoroutineCreationDuringComposition")
     override fun onCreate(savedInstanceState: Bundle?) {
+
+
+        lateinit var navController: NavHostController
+
 
         val mojviewModel = WeatherViewModel()
         val key = "P5WXCLMBC5KHHACPEMNLS76PP"
@@ -39,6 +45,12 @@ class MainActivity : ComponentActivity() {
         ).build()
         val userDao = db.userDao()
 
+        lifecycleScope.launch {
+                withContext(Dispatchers.IO) {
+                    // Perform the database operation
+                    userDao.insertAll(Miasto(miasto = "RADZYMIN"))
+                }
+            }
 
         super.onCreate(savedInstanceState)
         setContent {
@@ -49,69 +61,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
 
-                    Column {
-                        Row {
-
-                            Button(onClick = {
-                                lifecycleScope.launch {
-                                    val response = mojviewModel.lecimy()
-                                }
-                            }) {
-                                Text("VM")
-                            }
-
-
-                            Button(onClick = {
-                                lifecycleScope.launch {
-                                    val response = api.getcalyURL(
-                                        key = key,
-                                        contentType = "json",
-                                        location = "Suwałki",
-                                        unitGroup = "metric"
-                                    )
-                                    Log.d("123", "odpowiedz: ${response}")
-                                }
-                            }) {
-                                Text("do loga")
-                            }
-
-
-
-                            if (mojviewModel.timezone.value != "") {
-                                Text("Miejsce: ${mojviewModel.address.value}")
-                                Text("Temp: ${mojviewModel.temperature.value}")
-                            }
-                        }
-
-                        Button(onClick = {
-                            lifecycleScope.launch {
-                                withContext(Dispatchers.IO) {
-                                    // Perform the database operation
-                                    userDao.insertAll(Miasto(miasto = "WASILKÓW"))
-                                }
-                            }
-                        }) {
-                            Text(text = "dodaj miasto do db")
-                        }
-
-                        Button(onClick = {
-                            userDao.getAll()
-                            lifecycleScope.launch {
-                                withContext(Dispatchers.IO) {
-                                    Log.d(
-                                        "123", "miasta z db: ${userDao.getAll()}"
-                                    )
-                                }
-                            }
-
-                        })
-                        {
-                            Text(text = "pobierz miasta z db")
-
-                        }
-
-
-                    }
+                    ScaffoldExample(userDao = userDao)
 
 
                 }
@@ -135,3 +85,70 @@ fun GreetingPreview() {
         Greeting("Android")
     }
 }
+
+//@Composable
+//fun apkaSoFar(){
+//    Column {
+//        Row {
+//
+//            Button(onClick = {
+//                lifecycleScope.launch {
+//                    val response = mojviewModel.lecimy()
+//                }
+//            }) {
+//                Text("VM")
+//            }
+//
+//
+//            Button(onClick = {
+//                lifecycleScope.launch {
+//                    val response = api.getcalyURL(
+//                        key = key,
+//                        contentType = "json",
+//                        location = "Suwałki",
+//                        unitGroup = "metric"
+//                    )
+//                    Log.d("123", "odpowiedz: ${response}")
+//                }
+//            }) {
+//                Text("do loga")
+//            }
+//
+//
+//
+//            if (mojviewModel.timezone.value != "") {
+//                Text("Miejsce: ${mojviewModel.address.value}")
+//                Text("Temp: ${mojviewModel.temperature.value}")
+//            }
+//        }
+//
+//        Button(onClick = {
+//            lifecycleScope.launch {
+//                withContext(Dispatchers.IO) {
+//                    // Perform the database operation
+//                    userDao.insertAll(Miasto(miasto = "WASILKÓW"))
+//                }
+//            }
+//        }) {
+//            Text(text = "dodaj miasto do db")
+//        }
+//
+//        Button(onClick = {
+//            userDao.getAll()
+//            lifecycleScope.launch {
+//                withContext(Dispatchers.IO) {
+//                    Log.d(
+//                        "123", "miasta z db: ${userDao.getAll()}"
+//                    )
+//                }
+//            }
+//
+//        })
+//        {
+//            Text(text = "pobierz miasta z db")
+//
+//        }
+//
+//
+//    }
+//}
