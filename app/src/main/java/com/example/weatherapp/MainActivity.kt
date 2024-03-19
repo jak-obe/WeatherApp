@@ -8,8 +8,11 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,22 +20,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import com.example.weatherapp.Data.room.Database
 import com.example.weatherapp.Data.room.Miasto
 import com.example.weatherapp.api.obiektRetrofit.api
-import com.example.weatherapp.navigation.Screens.ScaffoldExample
+import com.example.weatherapp.navigation.Screen
+import com.example.weatherapp.navigation.Screens.DevScreen
+import com.example.weatherapp.navigation.Screens.HomeScreen
+import com.example.weatherapp.navigation.Screens.mojBar
 import com.example.weatherapp.ui.theme.WeatherAppTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("CoroutineCreationDuringComposition")
     override fun onCreate(savedInstanceState: Bundle?) {
-
-
-        lateinit var navController: NavHostController
 
 
         val mojviewModel = WeatherViewModel()
@@ -45,23 +52,39 @@ class MainActivity : ComponentActivity() {
         ).build()
         val userDao = db.userDao()
 
-        lifecycleScope.launch {
-                withContext(Dispatchers.IO) {
-                    // Perform the database operation
-                    userDao.insertAll(Miasto(miasto = "RADZYMIN"))
-                }
-            }
-
         super.onCreate(savedInstanceState)
         setContent {
             WeatherAppTheme {
+
+                val navController = rememberNavController()
+
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
 
-                    ScaffoldExample(userDao = userDao)
+
+                    //TODO sproboj tego czegos z kursu, db ma
+
+                    Scaffold(
+                        topBar = {
+                            mojBar(userDao = userDao, navController = navController)
+                        }
+                    ) { innerPadding ->
+                        NavHost(
+                            navController = navController,
+                            startDestination = Screen.Home.route,
+                            modifier = Modifier.padding(innerPadding)
+                        ) {
+                            composable(route = Screen.Home.route) {
+                                HomeScreen()
+                            }
+                            composable(route = Screen.DevScreen.route) {
+                                DevScreen()
+                            }
+                        }
+                    }
 
 
                 }
