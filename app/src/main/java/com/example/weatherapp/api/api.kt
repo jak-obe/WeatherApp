@@ -5,6 +5,7 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface weatherApi {
@@ -19,12 +20,13 @@ interface weatherApi {
     ): JsonObject
 
 
-    @GET("timeline/Suwa%C5%82ki?unitGroup=metric&include=days&key=P5WXCLMBC5KHHACPEMNLS76PP&contentType=json")
+    @GET("timeline/{location}?unitGroup=metric&include=days&key=P5WXCLMBC5KHHACPEMNLS76PP&contentType=json")
     suspend fun getcalyURL(
+        @Path("location") location: String,
         @Query("unitGroup") unitGroup: String,
         @Query("key") key: String,
         @Query("contentType") contentType: String,
-        @Query("location") location: String
+//        @Query("location") location: String
     ): JsonObject
 
 

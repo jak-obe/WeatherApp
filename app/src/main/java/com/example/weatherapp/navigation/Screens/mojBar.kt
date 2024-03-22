@@ -34,8 +34,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.navigation.NavController
+import com.example.weatherapp.Data.room.Miasto
 import com.example.weatherapp.Data.room.MiastoDao
+import com.example.weatherapp.ui.theme.WeatherAppTheme
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
 
@@ -123,8 +126,13 @@ fun pojedynczyNapis(miasto: String,navController: NavController) {
     Spacer(modifier = Modifier.width(8.dp))
 }
 
-@Preview
-@Composable
-fun prewju() {
-
-}
+//@Preview
+//@Composable
+//fun MojaBarPreview() {
+//    WeatherAppTheme {
+//        val navController = NavController(LocalContext.current)
+//        val userDao = MiastoDao()
+//
+//        mojBar(userDao = userDao, navController = navController)
+//    }
+//}

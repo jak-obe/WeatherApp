@@ -41,6 +41,9 @@ fun NewMiastoScreen(userDao: MiastoDao) {
     val dodajNoweMiasto: (String) -> Unit = { miasto ->
         coroutineScope.launch {
             withContext(Dispatchers.IO){
+
+
+
                 userDao.insertAll(Miasto(miasto = miasto))
             }
         }

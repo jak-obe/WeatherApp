@@ -16,6 +16,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
@@ -35,7 +38,9 @@ import com.example.weatherapp.navigation.Screens.NewMiastoScreen
 import com.example.weatherapp.navigation.Screens.mojBar
 import com.example.weatherapp.ui.theme.WeatherAppTheme
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -80,6 +85,24 @@ class MainActivity : ComponentActivity() {
             WeatherAppTheme {
 
                 val navController = rememberNavController()
+//                val hasSavedCities = remember { mutableStateOf(false) }
+
+                val coroutineScope = rememberCoroutineScope()
+//                val hasSavedCities = coroutineScope.launch {
+//                    withContext(Dispatchers.IO) {
+//                        userDao.getAll().firstOrNull()?.isNotEmpty() ?: false
+//                    }
+//                }
+                coroutineScope.launch {
+                    val hasSavedCities = userDao.getAll()
+                    //TODO zrobić tak aby strona startowa to był pierwszy miasto z listy
+                }
+                val hasSavedCities = userDao.getAll().map { it.isNotEmpty() }
+
+                val firstMiasto = userDao.getAll().map { it.firstOrNull()?.miasto ?: "" }
+
+
+
 
                 // A surface container using the 'background' color from the theme
                 Surface(
@@ -101,7 +124,7 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.padding(innerPadding)
                         ) {
                             composable(route = Screen.Home.route) {
-                                HomeScreen()
+                                HomeScreen(mojviewModel)
                             }
                             composable(route = Screen.DevScreen.route) {
                                 DevScreen()
@@ -111,7 +134,12 @@ class MainActivity : ComponentActivity() {
                             }
                             composable(route = Screen.MiastoScreen.route + "/{miasto}") { // Define route with argument
                                 val miasto = it.arguments?.getString("miasto") ?: ""
-                                MiastoScreen(miasto = miasto, userDao = userDao, navController = navController)
+                                MiastoScreen(
+                                    miasto = miasto,
+                                    userDao = userDao,
+                                    navController = navController,
+                                    weatherViewModel = mojviewModel
+                                )
                             }
                         }
                     }
