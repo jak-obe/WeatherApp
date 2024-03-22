@@ -30,9 +30,12 @@ import com.example.weatherapp.api.obiektRetrofit.api
 import com.example.weatherapp.navigation.Screen
 import com.example.weatherapp.navigation.Screens.DevScreen
 import com.example.weatherapp.navigation.Screens.HomeScreen
+import com.example.weatherapp.navigation.Screens.MiastoScreen
+import com.example.weatherapp.navigation.Screens.NewMiastoScreen
 import com.example.weatherapp.navigation.Screens.mojBar
 import com.example.weatherapp.ui.theme.WeatherAppTheme
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -51,6 +54,26 @@ class MainActivity : ComponentActivity() {
             Database::class.java, "mojdatabase"
         ).build()
         val userDao = db.userDao()
+
+
+
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                // Retrieve the list of Miasto objects
+                val miastaList = userDao.getAll().firstOrNull()
+
+                // Check if the list is not null and not empty
+                miastaList?.let { miasta ->
+                    // Find the first Miasto object with miasto value "876"
+                    val miastoToDelete = miasta.firstOrNull { it.miasto == "marek" }
+
+                    // Check if the miastoToDelete is not null before deleting
+                    miastoToDelete?.let { userDao.delete(it) }
+                }
+            }
+        }
+
+
 
         super.onCreate(savedInstanceState)
         setContent {
@@ -82,6 +105,13 @@ class MainActivity : ComponentActivity() {
                             }
                             composable(route = Screen.DevScreen.route) {
                                 DevScreen()
+                            }
+                            composable(route = Screen.NewMiastoScreen.route) {
+                                NewMiastoScreen(userDao)
+                            }
+                            composable(route = Screen.MiastoScreen.route + "/{miasto}") { // Define route with argument
+                                val miasto = it.arguments?.getString("miasto") ?: ""
+                                MiastoScreen(miasto = miasto, userDao = userDao, navController = navController)
                             }
                         }
                     }

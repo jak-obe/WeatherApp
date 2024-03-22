@@ -20,13 +20,19 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalSavedStateRegistryOwner
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.flowWithLifecycle
 import androidx.navigation.NavController
 import com.example.weatherapp.Data.room.MiastoDao
 import kotlinx.coroutines.Dispatchers
@@ -38,9 +44,18 @@ import kotlinx.coroutines.withContext
 fun mojBar(userDao: MiastoDao, navController: NavController) {
     var miastoList by remember { mutableStateOf<List<String>>(emptyList()) }
 
-    LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) {
-            val users = userDao.getAll()
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val savedStateRegistryOwner = LocalSavedStateRegistryOwner.current
+
+    val coroutineScope = rememberCoroutineScope()
+    val userDaoFlow = userDao.getAll()
+
+    LaunchedEffect(context, lifecycleOwner, savedStateRegistryOwner) {
+        userDaoFlow.flowWithLifecycle(
+            lifecycleOwner.lifecycle,
+            Lifecycle.State.STARTED
+        ).collect { users ->
             miastoList = users.filterNotNull().map { it.miasto.toString() }
         }
     }
@@ -51,28 +66,30 @@ fun mojBar(userDao: MiastoDao, navController: NavController) {
             .border(1.dp, Color.DarkGray),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
-
-        ) {
+    ) {
         Text(
             text = "xyz",
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.selectable(
                 selected = false,
-                onClick = { Log.d("123", "klikniete")
-                          navController.navigate(route="dev_screen")},
+                onClick = {
+                    // Handle click action
+                    navController.navigate(route = "dev_screen")
+                },
                 role = Role.Tab
             )
         )
         Spacer(modifier = Modifier.width(16.dp))
         Row() {
             miastoList.forEach { miasto ->
-                pojedynczyNapis(miasto)
+                pojedynczyNapis(miasto, navController =  navController)
             }
-
 
             // na koncu plusik do dodawania miasta
             IconButton(
-                onClick = {},
+                onClick = {
+                    navController.navigate(route = "new_miasto_screen")
+                },
                 modifier = Modifier
                     .size(48.dp)
                     .padding(8.dp),
@@ -87,15 +104,19 @@ fun mojBar(userDao: MiastoDao, navController: NavController) {
     }
 }
 
-
+//TODO pomysl jak nawigować do pojedyńczego miasta
+// Zrób jeden ekran dla wszystkich miast
+// musi tam byc mozliwosc podgladu pogody i usuwania danego miasta !!!!
 @Composable
-fun pojedynczyNapis(miasto: String) {
+fun pojedynczyNapis(miasto: String,navController: NavController) {
     Text(
         text = miasto,
         style = MaterialTheme.typography.bodySmall,
         modifier = Modifier.selectable(
             selected = false,
-            onClick = { Log.d("123", "klikniete") },
+            onClick = {
+                navController.navigate(route = "miasto_screen/$miasto") // Pass selected miasto as route argument
+                Log.d("123", "klikniete") },
             role = Role.Tab
         )
     )
