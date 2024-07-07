@@ -10,17 +10,19 @@ import com.google.gson.JsonObject
 import org.json.JSONObject
 import java.net.URLDecoder
 import java.io.UnsupportedEncodingException
+
 class WeatherViewModel : ViewModel() {
+
+    val currentLocation = mutableStateOf("")
 
     val weatherApiObject = obiektRetrofit.api
 
+    val description = mutableStateOf("")
     val timezone = mutableStateOf("")
     val temperature = mutableStateOf("")
     val address = mutableStateOf("")
     val apiState = mutableStateOf<ApiState>(ApiState.Loading)
-//    val otherDaysList = mutableListOf<Pair<String, Double>>()
-    val otherDaysList = mutableListOf<Pair<String, Double>>()
-
+    val otherDaysList = mutableListOf<Triple<String, Double, String>>()
 
 
     val key = "P5WXCLMBC5KHHACPEMNLS76PP"
@@ -53,26 +55,34 @@ class WeatherViewModel : ViewModel() {
     }
 
     // wazne: description - przewidywana pogoda w skrocie
+    // jako temperature bierz tempmax
 
-    fun parserodpowiedzi(response: String){
+    fun parserodpowiedzi(response: String) {
         val jsonObject = JSONObject(response)
         timezone.value = jsonObject.getString("timezone")
         address.value = jsonObject.getString("address")
+//        description.value = jsonObject.getString("description")
 
         val dayArray = jsonObject.getJSONArray("days")
 
         if (dayArray.length() > 0) {
             val currentDayObject = dayArray.getJSONObject(0)
-            val currentDayTemp = currentDayObject.getDouble("temp")
+            val currentDayTemp = currentDayObject.getDouble("tempmax")
+            val currentDayText = currentDayObject.getString("conditions")
             temperature.value = currentDayTemp.toString()
+            description.value = currentDayText
 
 //            val otherDaysList = mutableListOf<Pair<String, Double>>()
             otherDaysList.clear()
-            for (i in 1 until minOf(dayArray.length(), 7)) { // Ensure we don't exceed the length of dayArray or 5
+            for (i in 1 until minOf(
+                dayArray.length(),
+                7
+            )) { // Ensure we don't exceed the length of dayArray or 5
                 val dayObject = dayArray.getJSONObject(i)
                 val date = dayObject.getString("datetime")
-                val temp = dayObject.getDouble("temp")
-                otherDaysList.add(Pair(date, temp))
+                val temp = dayObject.getDouble("tempmax")
+                val icon = dayObject.getString("icon")
+                otherDaysList.add(Triple(date, temp, icon))
             }
 
             Log.d("123", otherDaysList.toString())

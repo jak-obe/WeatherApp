@@ -1,6 +1,8 @@
 package com.example.weatherapp.navigation.Screens
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
@@ -24,26 +27,34 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.weatherapp.Data.room.MiastoDao
+import com.example.weatherapp.R
 import com.example.weatherapp.WeatherViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @Composable
-fun MiastoScreen(miasto: String, userDao: MiastoDao, navController: NavController,weatherViewModel : WeatherViewModel) {
+fun MiastoScreen(
+    miasto: String,
+    userDao: MiastoDao,
+    navController: NavController,
+    weatherViewModel: WeatherViewModel
+) {
 
-    //TODO
-    // wsadz tutaj api i zrób tak aby robiło VM robił call przy odpaleniu tego screena
-    // zrob odpowiednie "kontenery" na odpowiednie dane ktore beda przechwytywane
-    // najpierw zrob frontend :)))))
 
     val coroutineScope = rememberCoroutineScope()
+
+    Log.d("ekran", "MiastoScreen: $miasto")
 
     val deleteCurrentMiasto: (String) -> Unit = { miasto ->
         coroutineScope.launch {
@@ -80,7 +91,7 @@ fun MiastoScreen(miasto: String, userDao: MiastoDao, navController: NavControlle
 
 
 
-    Column {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
         ItemRow(
             label = miasto,
@@ -93,17 +104,25 @@ fun MiastoScreen(miasto: String, userDao: MiastoDao, navController: NavControlle
             is WeatherViewModel.ApiState.Loading -> {
                 Text("Loading...")
             }
+
             is WeatherViewModel.ApiState.Success -> {
-                Column {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
 
-//                    Text("Timezone: ${weatherViewModel.timezone.value}")
-                    Text("${weatherViewModel.temperature.value}", fontSize = 56.sp, textAlign = TextAlign.Center)
-//                    Text("Address: ${weatherViewModel.address.value}")
-//                    Text("asd: ${miasto.toString()}")
+                    Text(
+                        "${weatherViewModel.temperature.value}°C",
+                        fontSize = 56.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        "${weatherViewModel.description.value}",
+                        fontSize = 23.sp,
+                        textAlign = TextAlign.Center
+                    )
                     WeatherInfo(weatherViewModel.otherDaysList)
                 }
             }
+
             is WeatherViewModel.ApiState.Error -> {
                 Text("Error: ${state.message}")
             }
@@ -114,43 +133,91 @@ fun MiastoScreen(miasto: String, userDao: MiastoDao, navController: NavControlle
 }
 
 
-
+// Tabela z dniami wrapper
 @Composable
-fun WeatherInfo(otherDaysList: List<Pair<String, Double>>){
-
-
-    Column {
-        LazyColumn(modifier = Modifier.padding(vertical = 4.dp),
+fun WeatherInfo(otherDaysList: List<Triple<String, Double, String>>) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.Center) {
+        LazyColumn(
+            modifier = Modifier
+                .padding(vertical = 4.dp)
+                .width(300.dp),
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally) {
-            itemsIndexed(otherDaysList) { index, (day, temperature) ->
-                DaysTableItem(dzien = day, temp = "${temperature}°C")
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            itemsIndexed(otherDaysList) { index, (day, temperature, icon) ->
+                DaysTableItem(dzien = day, temp = "${temperature}°C", icon = icon)
             }
         }
-
     }
+}
 
+@Preview(showBackground = true)
+@Composable
+fun PreviewWeatherInfo() {
+    WeatherInfo(
+        listOf(
+            Triple("2024-07-07", 12.0, "rainy"),
+            Triple("2024-07-08", 13.0, "rainy"),
+            Triple("2024-07-09", 14.0, "rainy"),
+            Triple("2024-07-10", 15.0, "rainy"),
+            Triple("2024-07-11", 16.0, "rainy"),
+            Triple("2024-07-12", 17.0, "rainy"),
+        )
+    )
 }
 
 @Composable
-fun DaysTableItem(dzien:String, temp: String){
+fun DaysTableItem(dzien: String, temp: String, icon: String) {
+
+    val formatter = DateTimeFormatter.ISO_DATE
+    val date = LocalDate.parse(dzien, formatter)
+    val dayOfWeek = date.dayOfWeek
+
+    val imageId = when (icon) {
+        "rain" -> R.drawable.rain
+        "partly-cloudy-day" -> R.drawable.partlycloudy
+        else-> R.drawable.baseline_sunny_24 // Optional default image
+    }
+
     OutlinedCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
         border = BorderStroke(1.dp, Color.Black),
         modifier = Modifier
-            .size(width = 240.dp, height = 50.dp)
+            .size(width = 2600.dp, height = 75.dp)
     ) {
-        Row(){
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Absolute.Left,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
 
-            // DZIEŃ
-            Text(
-                text = "${dzien}",
-                modifier = Modifier
-                    .padding(16.dp),
-                textAlign = TextAlign.Center,
-            )
+            Row() {
+
+
+                Image(
+                    painter = painterResource(id = imageId),
+                    contentDescription = "chmurka",
+                )
+
+                Column {
+                    Text(
+                        text = "${dayOfWeek}",
+//                    modifier = Modifier
+//                        .padding(16.dp),
+                        textAlign = TextAlign.Center,
+                    )
+
+                    Text(
+                        text = "${dzien}",
+//                    modifier = Modifier
+//                        .padding(16.dp),
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+
             // TEMP
             Text(
                 text = "${temp}",
@@ -174,18 +241,15 @@ fun ItemRow(label: String, onDelete: (String) -> Unit, navigateToDefault: () -> 
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = label,
-            modifier = Modifier.weight(1f),
-            color = Color.Black
-        )
+
+        Text(text = label)
+
         IconButton(
             onClick = {
                 onDelete(label)
                 navigateToDefault()
             }
         ) {
-            // You can replace Icons.Default.Delete with any other icon
             Icon(
                 imageVector = Icons.Default.Delete,
                 contentDescription = "Delete", tint = Color.Red
