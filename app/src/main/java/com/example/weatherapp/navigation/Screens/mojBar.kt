@@ -82,39 +82,35 @@ fun mojBar(miastoList: List<String>, navController: NavController) {
         var showMenu by remember { mutableStateOf(false) }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Row() {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 miastoList.forEach { miasto ->
                     pojedynczyNapis(miasto, navController = navController)
                 }
 
-                // na koncu plusik do dodawania miasta
-                IconButton(
-                    onClick = {
-                        navController.navigate(route = "new_miasto_screen")
-                    },
-                    modifier = Modifier
-                        .size(48.dp)
-                        .padding(8.dp),
-                    content = {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add",
-                        )
-                    }
-                )
+//                // na koncu plusik do dodawania miasta
+//                IconButton(
+//                    onClick = {
+//                        navController.navigate(route = "new_miasto_screen")
+//                    },
+//                    modifier = Modifier
+//                        .size(48.dp)
+//                        .padding(8.dp),
+//                    content = {
+//                        Icon(
+//                            imageVector = Icons.Default.Add,
+//                            contentDescription = "Add",
+//                        )
+//                    }
+//                )
 
             }
 
 
         }
 
-
     }
 }
 
-//TODO podkreślenie wybranego miasta.
-// Wycentrować i powiększyć. Kiedyś zrobić zmiane miasta gestem w prawo/lewo.
-// byćmoże zamiast plusa daj 3 kropki i po kliknieciu opcja dodania lub usniecia obecnego miasta :)
 
 
 @Composable
@@ -134,30 +130,11 @@ fun pojedynczyNapis(miasto: String, navController: NavController) {
                 Log.d("123", "klikniete")
             },
             role = Role.Tab
-        )
+        ).padding(8.dp)
     )
     Spacer(modifier = Modifier.width(8.dp))
 }
 
-
-//@Composable
-//fun pojedynczyNapis(miasto: String, navController: NavController) {
-//
-//    Text(
-//        text = miasto,
-////        style = MaterialTheme.typography.labelMedium,
-//        fontSize = 25.sp,
-//        modifier = Modifier.selectable(
-//            selected = false,
-//            onClick = {
-//                navController.navigate(route = "miasto_screen/$miasto") // Pass selected miasto as route argument
-//                Log.d("123", "klikniete")
-//            },
-//            role = Role.Tab
-//        )
-//    )
-//    Spacer(modifier = Modifier.width(8.dp))
-//}
 
 @Preview(showBackground = true)
 @Composable

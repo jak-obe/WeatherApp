@@ -58,7 +58,6 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
-//                userDao.insertAll(Miasto(miasto = "York"))
                 val firstObject = userDao.getFirstMiasto()
                 if (firstObject != null) {
                     Log.d("10", firstObject.miasto.toString())
@@ -128,8 +127,6 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
-
-
                 }
             }
         }

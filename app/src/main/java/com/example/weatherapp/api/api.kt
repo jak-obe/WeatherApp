@@ -30,6 +30,13 @@ interface weatherApi {
     ): JsonObject
 
 
+    @GET("timeline/{location}?unitGroup=metric&include=hours&key=P5WXCLMBC5KHHACPEMNLS76PP&contentType=json")
+    suspend fun getHourly(
+        @Path("location") location: String,
+        @Query("unitGroup") unitGroup: String,
+        @Query("key") key: String,
+        @Query("contentType") contentType: String,
+    ): JsonObject
 }
 
 
