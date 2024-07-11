@@ -7,27 +7,45 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
 import com.example.weatherapp.api.obiektRetrofit
 import com.google.gson.JsonObject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 import java.net.URLDecoder
 import java.io.UnsupportedEncodingException
 
 class WeatherViewModel : ViewModel() {
+    val apiState = mutableStateOf<ApiState>(ApiState.Loading)
+    val apiStateHourly = mutableStateOf<ApiState>(ApiState.Loading)
 
-    val currentLocation = mutableStateOf("")
+
+//    val hourlyTemperaturesVM = mutableListOf<Double>()
+    val hourlyTemperaturesVM = mutableListOf<Pair<Double, String>>()
+
+
+    private val _selectedCity = MutableStateFlow<String?>(null)
+
+
+    val selectedCity: StateFlow<String?> = _selectedCity.asStateFlow()
 
     val weatherApiObject = obiektRetrofit.api
-
     val description = mutableStateOf("")
     val timezone = mutableStateOf("")
+
     val temperature = mutableStateOf("")
     val address = mutableStateOf("")
-    val apiState = mutableStateOf<ApiState>(ApiState.Loading)
-    val otherDaysList = mutableListOf<Triple<String, Double, String>>()
+    val iconToday = mutableStateOf("")
 
-    val hourlyTemperaturesVM = mutableListOf<Double>()
+    val otherDaysList = mutableListOf<Triple<String, Double, String>>()
 
 
     val key = "P5WXCLMBC5KHHACPEMNLS76PP"
+
+
+    fun setSelectedCity(city: String) {
+        _selectedCity.value = city
+    }
+
 
     suspend fun apiCallFull(desiredLocation: String) {
 
@@ -47,7 +65,6 @@ class WeatherViewModel : ViewModel() {
             parserodpowiedzi(response.toString()) // Use the response directly
             apiState.value = ApiState.Success()
             Log.d("123", "odpowiedz poprawna: ${response}")
-            Log.d("123", "odpowiedz poprawna: ${apiState.value}")
         }
 
         result.onFailure { exception ->
@@ -56,6 +73,7 @@ class WeatherViewModel : ViewModel() {
             Log.d("123", "Error occurred: ${exception.message}")
         }
     }
+
 
     suspend fun apiCallHourly(desiredLocation: String) {
 
@@ -73,13 +91,13 @@ class WeatherViewModel : ViewModel() {
         result.onSuccess { response ->
             // Handle successful response
             parseHourlyTemperatures(response.toString()) // Use the response directly
-            apiState.value = ApiState.Success()
+            apiStateHourly.value = ApiState.Success()
             Log.d("hour", "godzinowa odpowiedz: ${response}")
         }
 
         result.onFailure { exception ->
             // Handle error
-            apiState.value = ApiState.Error(exception.message ?: "Unknown error")
+            apiStateHourly.value = ApiState.Error(exception.message ?: "Unknown error")
             Log.d("hour", "Error occurred: ${exception.message}")
         }
     }
@@ -100,8 +118,10 @@ class WeatherViewModel : ViewModel() {
             val currentDayObject = dayArray.getJSONObject(0)
             val currentDayTemp = currentDayObject.getDouble("tempmax")
             val currentDayText = currentDayObject.getString("conditions")
+            val currentDayIcon = currentDayObject.getString("icon")
             temperature.value = currentDayTemp.toString()
             description.value = currentDayText
+            iconToday.value = currentDayIcon
 
 //            val otherDaysList = mutableListOf<Pair<String, Double>>()
             otherDaysList.clear()
@@ -127,6 +147,7 @@ class WeatherViewModel : ViewModel() {
     }
 
     fun parseHourlyTemperatures(response: String): List<Double> {
+        hourlyTemperaturesVM.clear()
         val hourlyTemperatures = mutableListOf<Double>()
         val jsonObject = JSONObject(response)
 
@@ -138,17 +159,17 @@ class WeatherViewModel : ViewModel() {
             val currentDayObject = dayArray.getJSONObject(0)
             val hoursArray = currentDayObject.getJSONArray("hours")
 
-            for(i in 0 until hoursArray.length()) {
+            for (i in 0 until hoursArray.length()) {
                 val hourObject = hoursArray.getJSONObject(i)
                 val temp = hourObject.getDouble("temp")
-                hourlyTemperaturesVM.add(temp)
+                val icon = hourObject.getString("icon")
+                hourlyTemperaturesVM.add(Pair(temp, icon))
             }
         }
         Log.d("hour", hourlyTemperaturesVM.toString())
         Log.d("hour", hourlyTemperaturesVM.size.toString())
         return hourlyTemperatures
     }
-
 
 
     sealed class ApiState {

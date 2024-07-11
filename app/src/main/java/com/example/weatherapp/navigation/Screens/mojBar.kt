@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,10 +45,15 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.navigation.NavController
 import com.example.weatherapp.Data.room.MiastoDao
+import com.example.weatherapp.WeatherViewModel
 
 
 @Composable
-fun mojBarScreen(userDao: MiastoDao, navController: NavController) {
+fun mojBarScreen(
+    userDao: MiastoDao,
+    navController: NavController,
+    weatherViewModel: WeatherViewModel
+) {
     var miastoList by remember { mutableStateOf<List<String>>(emptyList()) }
 
     val context = LocalContext.current
@@ -56,6 +62,9 @@ fun mojBarScreen(userDao: MiastoDao, navController: NavController) {
 
     val coroutineScope = rememberCoroutineScope()
     val userDaoFlow = userDao.getAll()
+
+
+    val selectedCity by weatherViewModel.selectedCity.collectAsState()
 
     LaunchedEffect(context, lifecycleOwner, savedStateRegistryOwner) {
         userDaoFlow.flowWithLifecycle(
@@ -66,11 +75,25 @@ fun mojBarScreen(userDao: MiastoDao, navController: NavController) {
         }
     }
 
-    mojBar(miastoList = miastoList, navController = navController)
+    mojBar(
+        miastoList = miastoList,
+        navController = navController,
+        selectedCity = selectedCity,
+        onCitySelected = { city ->
+            weatherViewModel.setSelectedCity(city)// Call the ViewModel function
+        }
+    )
 }
 
+typealias OnCitySelected = (String) -> Unit
+
 @Composable
-fun mojBar(miastoList: List<String>, navController: NavController) {
+fun mojBar(
+    miastoList: List<String>,
+    navController: NavController, onCitySelected: OnCitySelected,
+    selectedCity: String?,
+) {
+
     Row(
         modifier = Modifier
             .padding(16.dp)
@@ -81,10 +104,25 @@ fun mojBar(miastoList: List<String>, navController: NavController) {
     ) {
         var showMenu by remember { mutableStateOf(false) }
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 miastoList.forEach { miasto ->
-                    pojedynczyNapis(miasto, navController = navController)
+                    pojedynczyNapis(
+                        miasto = miasto,
+                        isSelected = miasto == selectedCity, // Pass selection state
+                        onClick = {
+                            navController.navigate(route = "miasto_screen/$miasto")
+                            onCitySelected(miasto)
+                        },
+                        navController = navController
+                    )
                 }
 
 //                // na koncu plusik do dodawania miasta
@@ -104,44 +142,32 @@ fun mojBar(miastoList: List<String>, navController: NavController) {
 //                )
 
             }
-
-
         }
-
     }
 }
 
 
-
 @Composable
-fun pojedynczyNapis(miasto: String, navController: NavController) {
-    var isSelected by remember { mutableStateOf(false) }
-
-    Text(text = miasto,
+fun pojedynczyNapis(
+    miasto: String,
+    isSelected: Boolean, // Receive selection state
+    onClick: () -> Unit,
+    navController: NavController
+) {
+    Text(
+        text = miasto,
         fontSize = 25.sp,
         style = TextStyle(
-            textDecoration = if (isSelected) TextDecoration.Underline else null // Underline ONLY when selected
+            textDecoration = if (isSelected) TextDecoration.Underline else null
         ),
-        modifier = Modifier.selectable(
-            selected = isSelected,
-            onClick = {
-                isSelected = !isSelected
-                navController.navigate(route = "miasto_screen/$miasto")
-                Log.d("123", "klikniete")
-            },
-            role = Role.Tab
-        ).padding(8.dp)
+        modifier = Modifier
+            .selectable(
+                selected = isSelected,
+                onClick = onClick, // Use the provided onClick lambda
+                role = Role.Tab
+            )
+            .padding()
     )
     Spacer(modifier = Modifier.width(8.dp))
 }
 
-
-@Preview(showBackground = true)
-@Composable
-fun MojeBarPreview() {
-
-    mojBar(
-        miastoList = listOf("Warszawa", "Kraków", "Gdańsk"),
-        navController = NavController(LocalContext.current)
-    )
-}

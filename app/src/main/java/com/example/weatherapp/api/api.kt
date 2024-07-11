@@ -19,6 +19,7 @@ interface weatherApi {
         @Query("location") location: String
     ): JsonObject
 
+    //TODO tu jest klucz
 
     @GET("timeline/{location}?unitGroup=metric&include=days&key=P5WXCLMBC5KHHACPEMNLS76PP&contentType=json")
     suspend fun getcalyURL(
@@ -37,6 +38,8 @@ interface weatherApi {
         @Query("key") key: String,
         @Query("contentType") contentType: String,
     ): JsonObject
+
+
 }
 
 

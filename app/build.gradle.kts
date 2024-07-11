@@ -57,6 +57,7 @@ android {
 
 dependencies {
 
+    implementation("androidx.wear.compose:compose-material:1.3.1")
     // room database
     val room_version = "2.6.1"
 

@@ -58,6 +58,7 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
+//                userDao.insertAll(Miasto(miasto = "York"))
                 val firstObject = userDao.getFirstMiasto()
                 if (firstObject != null) {
                     Log.d("10", firstObject.miasto.toString())
@@ -70,6 +71,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             WeatherAppTheme {
 
+
+                val mojviewModel = WeatherViewModel()
                 val navController = rememberNavController()
 
                 // A surface container using the 'background' color from the theme
@@ -95,7 +98,7 @@ class MainActivity : ComponentActivity() {
 
                     Scaffold(
                         topBar = {
-                            mojBarScreen(userDao = userDao, navController = navController)
+                            mojBarScreen(userDao = userDao, navController = navController, weatherViewModel = mojviewModel)
                         }
                     ) { innerPadding ->
                         NavHost(
@@ -104,7 +107,6 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.padding(innerPadding)
                         ) {
 
-                            val mojviewModel = WeatherViewModel()
 
                             composable(route = Screen.Home.route) {
                                 HomeScreen(
@@ -114,7 +116,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             composable(route = Screen.NewMiastoScreen.route) {
-                                NewMiastoScreen(userDao = userDao, navController = navController)
+                                NewMiastoScreen(userDao = userDao, navController = navController, weatherViewModel = mojviewModel)
                             }
                             composable(route = Screen.MiastoScreen.route + "/{miasto}") { // Define route with argument
                                 val miasto = it.arguments?.getString("miasto") ?: ""
@@ -127,6 +129,8 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
+
+
                 }
             }
         }

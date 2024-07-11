@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.weatherapp.Data.room.Miasto
 import com.example.weatherapp.Data.room.MiastoDao
+import com.example.weatherapp.WeatherViewModel
 import com.example.weatherapp.navigation.Screen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -39,7 +40,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun NewMiastoScreen(userDao: MiastoDao, navController: NavController) {
+fun NewMiastoScreen(userDao: MiastoDao, navController: NavController, weatherViewModel: WeatherViewModel) {
 
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -52,11 +53,12 @@ fun NewMiastoScreen(userDao: MiastoDao, navController: NavController) {
                     userDao.insertAll(Miasto(miasto = miasto))
                     withContext(Dispatchers.Main) {
                         navController.navigate("${Screen.MiastoScreen.route}/$miasto")
+                        weatherViewModel.setSelectedCity(miasto)
                     }
                 }
                 else {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Maksymalna liczba miast to 3", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Max number of cities is 3", Toast.LENGTH_SHORT).show()
                     }
 
                 }
@@ -90,7 +92,7 @@ fun SimpleFormWithButton(onButtonClick: (String) -> Unit) {
             onValueChange = { newValue ->
                 textFieldValue = newValue.filter { it.isLetter() } // Filter for letters only
             },
-            placeholder = { Text("Dodaj nowe miasto!") },
+            placeholder = { Text("Add new city!") },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp)
@@ -107,7 +109,7 @@ fun SimpleFormWithButton(onButtonClick: (String) -> Unit) {
             },
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            Text("Submit")
+                Text("Add")
         }
     }
 }

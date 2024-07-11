@@ -54,6 +54,7 @@ fun HomeScreen(
                 if (firstMiasto != null) {
                     Log.d("nawigacja", "nie jest null")
                     navController.navigate("${Screen.MiastoScreen.route}/${firstMiasto}")
+                    weatherViewModel.setSelectedCity(firstMiasto.toString())
                 } else {
                     Log.d("nawigacja", "jest null")
                     navController.navigate(Screen.NewMiastoScreen.route)

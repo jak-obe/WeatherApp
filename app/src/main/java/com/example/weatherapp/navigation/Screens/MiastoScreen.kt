@@ -3,6 +3,7 @@ package com.example.weatherapp.navigation.Screens
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -30,20 +32,26 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import androidx.room.Room
-import com.example.weatherapp.Data.room.Database
+import androidx.wear.compose.material.ExperimentalWearMaterialApi
+import androidx.wear.compose.material.FractionalThreshold
+import androidx.wear.compose.material.rememberSwipeableState
+import androidx.wear.compose.material.swipeable
 import com.example.weatherapp.Data.room.MiastoDao
 import com.example.weatherapp.R
 import com.example.weatherapp.WeatherViewModel
@@ -52,8 +60,11 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Calendar
 
+@OptIn(ExperimentalWearMaterialApi::class)
 @Composable
 fun MiastoScreen(
     miasto: String,
@@ -61,12 +72,8 @@ fun MiastoScreen(
     navController: NavController,
     weatherViewModel: WeatherViewModel
 ) {
-
-    // TODO chujowo dziala ta lista pozioma, dodaj gest w prawo i lewo.
-
     val coroutineScope = rememberCoroutineScope()
 
-    Log.d("ekran", "MiastoScreen: $miasto")
 
     val deleteCurrentMiasto: (String) -> Unit = { miasto ->
         coroutineScope.launch {
@@ -89,6 +96,11 @@ fun MiastoScreen(
         navController.navigate(route = "home_screen")
     }
 
+    fun navigateToNewMiasto(navController: NavController) {
+        navController.navigate(route = "new_miasto_screen")
+    }
+
+
     // Fetch weather data whenever miasto changes
     LaunchedEffect(miasto) {
         coroutineScope.launch(Dispatchers.IO) {
@@ -101,66 +113,64 @@ fun MiastoScreen(
 
 
     Column(
+        verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxHeight()
     ) {
 
-        ItemRow(
-            label = miasto,
-            onDelete = deleteCurrentMiasto,
-            navigateToDefault = { navigateToDefault(navController) },
-            navController = navController
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-
 
         when (val state = weatherViewModel.apiState.value) {
             is WeatherViewModel.ApiState.Loading -> {
-                Text("Ładowanie...")
-                Text(
-                    "${weatherViewModel.temperature.value}°C",
-                    fontSize = 56.sp,
-                    textAlign = TextAlign.Center
-                )
+                Text("Loading...")
             }
 
             is WeatherViewModel.ApiState.Success -> {
-                Column(modifier = Modifier.fillMaxHeight(),
+
+                ItemRow(
+                    label = miasto,
+                    onDelete = deleteCurrentMiasto,
+                    navigateToDefault = { navigateToDefault(navController) },
+                    navigateToNewMiastoScreen = { navigateToNewMiasto(navController) }
+                )
+
+
+                Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceEvenly
                 ) {
 
+                    iconTempDesc(temperatura = weatherViewModel.temperature.value, desctipion =  weatherViewModel.description.value, icon = weatherViewModel.iconToday.value)
 
-                    Text(
-                        "${weatherViewModel.temperature.value}°C",
-                        fontSize = 56.sp,
-                        textAlign = TextAlign.Center
-                    )
-                    Text(
-                        "${weatherViewModel.description.value}",
-                        fontSize = 23.sp,
-                        textAlign = TextAlign.Center
-                    )
+                    WeatherInfo(weatherViewModel.otherDaysList)
+                }
 
-                    Column(verticalArrangement = Arrangement.SpaceEvenly) {
-                        WeatherInfo(weatherViewModel.otherDaysList)
+                when (val stateHour = weatherViewModel.apiStateHourly.value) {
 
-
-                        // tutaj bedzie pasek z godzinami
-                        WeatherHourlyInfoBar(weatherViewModel.hourlyTemperaturesVM)
+                    WeatherViewModel.ApiState.Loading -> {
+                        Column() {
+                            Text("Loading...")
+                        }
                     }
 
+                    is WeatherViewModel.ApiState.Success -> {
+                        Column() {
+                            // tutaj bedzie pasek z godzinami
+                            WeatherHourlyInfoBar(weatherViewModel.hourlyTemperaturesVM)
+                        }
+                    }
+
+                    is WeatherViewModel.ApiState.Error -> {
+                        Text(text = "Error")
+                    }
                 }
             }
-
 
             is WeatherViewModel.ApiState.Error -> {
                 Text("Error: ${state.message}")
             }
         }
     }
+
+
 }
 
 
@@ -187,25 +197,57 @@ fun WeatherInfo(otherDaysList: List<Triple<String, Double, String>>) {
 }
 
 
-@Preview(showBackground = true)
-@Composable
-fun WeatherHourlyInfoBarComposable() {
+//@Preview(showBackground = true)
+//@Composable
+//fun WeatherHourlyInfoBarComposable() {
 //    WeatherHourlyInfoBar()
-}
+//}
 
 
 @Composable
-fun WeatherHourlyInfoBar(listOfHourlyTemp:  List<Double>) {
+fun WeatherHourlyInfoBar(tempAndIcon: MutableList<Pair<Double, String>>) {
+    val lazyListState = rememberLazyListState()
+    var initialIndex by remember { mutableStateOf(0) } // State to control initial item// Function to set the initial index
+    fun setInitialIndex(index: Int) {
+        initialIndex = index
+    }
 
-//    val numbersArray = listOf(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17,18,19,20,21,22,23)
+    fun getCurrentHour(): Int {
+        val currentDateTime = LocalDateTime.now()
+        Log.d("godzina", currentDateTime.hour.toString())
+        return currentDateTime.hour
+    }
 
-    LazyRow(modifier = Modifier.fillMaxWidth()) {
-        items(listOfHourlyTemp.size) { index -> // Adjust the count (10) as needed
+    // in case ze tamto zle dziala
+//    val rightNow = Calendar.getInstance()
+//    val currentHourIn24Format: Int =rightNow.get(Calendar.HOUR_OF_DAY)
+
+    // Launch an effect to scroll to the initial index when it changes
+    LaunchedEffect(initialIndex) {
+        lazyListState.scrollToItem(getCurrentHour())
+    }
+
+    val listaGodzin =
+        listOf(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23)
+    val iconMap = mapOf(
+        "clear-day" to R.drawable.baseline_sunny_24,
+        "clear-night" to R.drawable.clearnight,
+        "rain" to R.drawable.rain,
+        "cloudy" to R.drawable.cloud,
+        "partly-cloudy-day" to R.drawable.partlycloudy,
+        "partly-cloudy-night" to R.drawable.partlycloudynight,
+        // ... add more mappings
+    )
+
+    LazyRow(state = lazyListState, modifier = Modifier.fillMaxWidth()) {
+        items(24) { index -> // Adjust the count (10) as needed
+            val (temperature, iconDescription) = tempAndIcon.getOrNull(index) ?: ("N/A" to "")
+            val iconId = iconMap[iconDescription] ?: R.drawable.pending
+
             HourlyInfoItem(
-                time = "${1}:00",
-//                temperature = "${(15..30).random()}°C",
-                temperature = "${listOfHourlyTemp[index]}°C",
-                icon = painterResource(id = R.drawable.cloud)// Replace with actual icons
+                time = "${listaGodzin[index]}:00",
+                temperature = "${temperature}°C",
+                icon = painterResource(id = iconId)// Replace with actual icons
             )
         }
     }
@@ -228,7 +270,7 @@ fun HourlyInfoItem(time: String, temperature: String, icon: Painter) {
             modifier = Modifier.size(32.dp) // Adjust size as needed
         )
         Spacer(modifier = Modifier.height(4.dp))
-        Text(text = temperature.toString())
+        Text(text = temperature)
     }
 }
 
@@ -256,11 +298,15 @@ fun DaysTableItem(dzien: String, temp: String, icon: String) {
     var dayOfWeek = date.dayOfWeek.toString()
     dayOfWeek = dayOfWeek.substring(0, 3) + "."
 
-    val imageId = when (icon) {
-        "rain" -> R.drawable.rain
-        "partly-cloudy-day" -> R.drawable.partlycloudy
-        else -> R.drawable.baseline_sunny_24 // Optional default image
-    }
+    val iconMap = mapOf(
+        "clear-day" to R.drawable.baseline_sunny_24,
+        "clear-night" to R.drawable.clearnight,
+        "rain" to R.drawable.rain,
+        "cloudy" to R.drawable.cloud,
+        "partly-cloudy-day" to R.drawable.partlycloudy,
+        "partly-cloudy-night" to R.drawable.partlycloudynight,
+        // ... add more mappings
+    )
 
     OutlinedCard(
         colors = CardDefaults.cardColors(
@@ -277,21 +323,19 @@ fun DaysTableItem(dzien: String, temp: String, icon: String) {
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(
-                    painter = painterResource(id = imageId),
+                    painter = painterResource(id = iconMap[icon] ?: R.drawable.pending),
                     contentDescription = "chmurka",
                 )
                 Column() {
                     Text(
                         text = "${dayOfWeek}",
-//                    modifier = Modifier
-//                        .padding(16.dp),
+
                         textAlign = TextAlign.Center,
                     )
 
                     Text(
                         text = "${dzien}",
-//                    modifier = Modifier
-//                        .padding(16.dp),
+
                         textAlign = TextAlign.Center,
                     )
                 }
@@ -314,13 +358,16 @@ fun DaysTableItem(dzien: String, temp: String, icon: String) {
 }
 
 
+@OptIn(ExperimentalWearMaterialApi::class)
 @Composable
 fun ItemRow(
     label: String,
     onDelete: (String) -> Unit,
     navigateToDefault: () -> Unit,
-    navController: NavController
+    navigateToNewMiastoScreen: () -> Unit
 ) {
+
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -329,13 +376,15 @@ fun ItemRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
 
+
         Text(text = label)
 
         Row() {
-            // ikona z buttonem do plusem do dadawania miasta
+
+
             IconButton(
                 onClick = {
-                    navController.navigate(route = "new_miasto_screen")
+                    navigateToNewMiastoScreen()
                 },
                 modifier = Modifier
                     .size(48.dp)
@@ -347,6 +396,7 @@ fun ItemRow(
                     )
                 }
             )
+
 
             IconButton(
                 onClick = {
@@ -360,17 +410,45 @@ fun ItemRow(
                 )
             }
         }
-
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun ItemRowPreview() {
-    ItemRow(
-        label = "Warsaw",
-        onDelete = {},
-        navigateToDefault = {},
-        navController = rememberNavController()
+fun iconTempDesc(temperatura: String, desctipion: String, icon: String) {
+
+    val iconMap = mapOf(
+        "clear-day" to R.drawable.baseline_sunny_24,
+        "clear-night" to R.drawable.clearnight,
+        "rain" to R.drawable.rain,
+        "cloudy" to R.drawable.cloud,
+        "partly-cloudy-day" to R.drawable.partlycloudy,
+        "partly-cloudy-night" to R.drawable.partlycloudynight,
+        // ... add more mappings
     )
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Image(
+            painter = painterResource(id = iconMap[icon] ?: R.drawable.pending),
+            contentDescription = "Weather Icon",
+            modifier = Modifier.size(64.dp) // Adjust size as needed
+        )
+
+        Text(
+            "${temperatura}°C",
+            fontSize = 56.sp,
+            textAlign = TextAlign.Center, modifier = Modifier.padding(8.dp)
+        )
+
+        Text(
+            "${desctipion}",
+            fontSize = 23.sp,
+            textAlign = TextAlign.Center
+        )
+    }
+
+
 }
+
+
